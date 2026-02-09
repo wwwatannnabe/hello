@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>hello - game</title>
+    <style>
+        /* --- 既存のスタイル --- */
+        body {
+            margin: 0; padding: 40px 20px; font-family: sans-serif; line-height: 1.6;
+            background-color: cadetblue; display: flex; flex-direction: column; align-items: center; 
+        }
+        header { width: 100%; max-width: 800px; margin-bottom: 20px; color: white; }
+        header h1 { border-bottom: 2px solid white; padding-bottom: 10px; margin: 0; }
+        main {
+            background-color: white; width: 100%; max-width: 800px; padding: 50px;
+            box-sizing: border-box; color: #333; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border-radius: 4px;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        #tetris-container { text-align: center; }
+        canvas { background-color: #000; border: 4px solid #333; display: block; margin: 0 auto; border-radius: 4px; }
+        .score { font-size: 2em; font-weight: bold; color: cadetblue; margin-bottom: 10px; }
+
+        /* --- ボタンエリアのスタイル --- */
+        .button-group {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 1em;
+            font-weight: bold;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        #start-button { background-color: #ff8e0d; box-shadow: 0 4px #d3750a; }
+        #stop-button { background-color: #e74c3c; box-shadow: 0 4px #c0392b; }
+        #reset-button { background-color: #3498db; box-shadow: 0 4px #2980b9; }
+
+        button:active { transform: translateY(2px); box-shadow: none; }
+        button:disabled { background-color: #ccc; box-shadow: none; cursor: not-allowed; }
+
+        .controls-info { margin-top: 15px; font-size: 0.9em; color: #777; }
+        .nav-container { width: 100%; max-width: 800px; margin-top: 20px; text-align: right; }
+        .nav-container a { color: white; text-decoration: none; font-weight: bold; background: rgba(0,0,0,0.2); padding: 8px 16px; border-radius: 20px; }
+        footer { margin-top: 40px; color: rgba(255,255,255,0.7); font-size: 0.8em; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>ようこそ　テトリスへ</h1>
+        <nav class="nav-container">
+            <a href="../index.html">← homeに戻る</a>
+        </nav>
+    </header>
+
+    <main>
+        <div id="tetris-container">
+            <div class="score" id="score">SCORE: 0</div>
+            <canvas id="tetris" width="240" height="400"></canvas>
+            
+            <div class="button-group">
+                <button id="start-button">START</button>
+                <button id="stop-button">STOP</button>
+                <button id="reset-button">RESET</button>
+            </div>
+
+            <div class="controls-info">
+                操作：矢印キー（左右：移動 / 上：回転 / 下：加速）
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 wwwatannnabe</p>
+    </footer>
+
+    <script>
+        const canvas = document.getElementById('tetris');
+        const context = canvas.getContext('2d');
+        const startBtn = document.getElementById('start-button');
+        const stopBtn = document.getElementById('stop-button');
+        const resetBtn = document.getElementById('reset-button');
+        context.scale(20, 20);
+
+        let isRunning = false;
+        let requestId = null; // アニメーションを停止させるためのID
+
+        // 共通データ
+        const arena = Array.from({length: 20}, () => Array(12).fill(0));
+        const player = { pos: {x: 0, y: 0}, matrix: null, score: 0 };
+
+        function arenaSweep() {
+            let rowCount = 1;
+            outer: for (let y = arena.length - 1; y > 0; --y) {
+                for (let x = 0; x < arena[y].length; ++x) {
+                    if (arena[y][x] === 0) continue outer;
+                }
+                const row = arena.splice(y, 1)[0].fill(0);
+                arena.unshift(row);
+                ++y;
+                player.score += rowCount * 10;
+            }
+        }
+
+        function collide(arena, player) {
+            const [m, o] = [player.matrix, player.pos];
+            for (let y = 0; y < m.length; ++y) {
+                for (let x = 0; x < m[y].length; ++x) {
+                    if (m[y][x] !== 0 && (arena[y + o.y] && arena[y + o.y][x + o.x]) !== 0) return true;
+                }
+            }
+            return false;
+        }
+
+        function createPiece(type) {
+            if (type === 'T') return [[0, 1, 0], [1, 1, 1], [0, 0, 0]];
+            if (type === 'O') return [[2, 2], [2, 2]];
+            if (type === 'L') return [[0, 3, 0], [0, 3, 0], [0, 3, 3]];
+            if (type === 'J') return [[0, 4, 0], [0, 4, 0], [4, 4, 0]];
+            if (type === 'I') return [[0, 5, 0, 0], [0, 5, 0, 0], [0, 5, 0, 0], [0, 5, 0, 0]];
+            if (type === 'S') return [[0, 6, 6], [6, 6, 0], [0, 0, 0]];
+            if (type === 'Z') return [[7, 7, 0], [0, 7, 7], [0, 0, 0]];
+        }
+
+        function draw() {
+            context.fillStyle = '#000';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            drawMatrix(arena, {x: 0, y: 0});
+            drawMatrix(player.matrix, player.pos);
+        }
+
+        function drawMatrix(matrix, offset) {
+            const colors = [null, '#FF0D72', '#0DC2FF', '#0DFF72', '#F538FF', '#FF8E0D', '#FFE138', '#3877FF'];
+            if (!matrix) return;
+            matrix.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value !== 0) {
+                        context.fillStyle = colors[value];
+                        context.fillRect(x + offset.x, y + offset.y, 1, 1);
+                    }
+                });
+            });
+        }
+
+        function merge(arena, player) {
+            player.matrix.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value !== 0) arena[y + player.pos.y][x + player.pos.x] = value;
+                });
+            });
+        }
+
+        function playerDrop() {
+            player.pos.y++;
+            if (collide(arena, player)) {
+                player.pos.y--;
+                merge(arena, player);
+                playerReset();
+                arenaSweep();
+                updateScore();
+            }
+            dropCounter = 0;
+        }
+
+        function playerMove(dir) {
+            player.pos.x += dir;
+            if (collide(arena, player)) player.pos.x -= dir;
+        }
+
+        function playerReset() {
+            const pieces = 'ILJOTSZ';
+            player.matrix = createPiece(pieces[pieces.length * Math.random() | 0]);
+            player.pos.y = 0;
+            player.pos.x = (arena[0].length / 2 | 0) - (player.matrix[0].length / 2 | 0);
+            if (collide(arena, player)) {
+                gameOver();
+            }
+        }
+
+        function gameOver() {
+            arena.forEach(row => row.fill(0));
+            player.score = 0;
+            updateScore();
+            isRunning = false;
+            cancelAnimationFrame(requestId);
+            startBtn.disabled = false;
+            startBtn.innerText = "RESTART";
+        }
+
+        function playerRotate(dir) {
+            const pos = player.pos.x;
+            let offset = 1;
+            rotate(player.matrix, dir);
+            while (collide(arena, player)) {
+                player.pos.x += offset;
+                offset = -(offset + (offset > 0 ? 1 : -1));
+                if (offset > player.matrix[0].length) {
+                    rotate(player.matrix, -dir);
+                    player.pos.x = pos;
+                    return;
+                }
+            }
+        }
+
+        function rotate(matrix, dir) {
+            for (let y = 0; y < matrix.length; ++y) {
+                for (let x = 0; x < y; ++x) {
+                    [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]];
+                }
+            }
+            if (dir > 0) matrix.forEach(row => row.reverse());
+            else matrix.reverse();
+        }
+
+        let dropCounter = 0;
+        let dropInterval = 1000;
+        let lastTime = 0;
+
+        function update(time = 0) {
+            if (!isRunning) return;
+            const deltaTime = time - lastTime;
+            lastTime = time;
+            dropCounter += deltaTime;
+            if (dropCounter > dropInterval) playerDrop();
+            draw();
+            requestId = requestAnimationFrame(update);
+        }
+
+        function updateScore() {
+            document.getElementById('score').innerText = "SCORE: " + player.score;
+        }
+
+        // --- ボタンの処理 ---
+
+        startBtn.addEventListener('click', () => {
+            if (!isRunning) {
+                isRunning = true;
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                if (!player.matrix) playerReset();
+                lastTime = performance.now(); // 停止明けのワープ防止
+                update();
+            }
+        });
+
+        stopBtn.addEventListener('click', () => {
+            isRunning = false;
+            cancelAnimationFrame(requestId);
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            startBtn.innerText = "RESUME"; // 「再開」に表記変更
+        });
+
+        resetBtn.addEventListener('click', () => {
+            isRunning = false;
+            cancelAnimationFrame(requestId);
+            arena.forEach(row => row.fill(0));
+            player.score = 0;
+            player.matrix = null;
+            updateScore();
+            draw(); // 真っ黒に戻す
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            startBtn.innerText = "START";
+        });
+
+        document.addEventListener('keydown', event => {
+            // 矢印キー（37:左, 38:上, 39:右, 40:下）が押された時だけ
+            if ([37, 38, 39, 40].includes(event.keyCode)) {
+                event.preventDefault(); // ← これが魔法の言葉！ブラウザのスクロールを止める
+            }
+
+            if (!isRunning) return; // ゲーム中以外は以下の処理をしない
+
+            if (event.keyCode === 37) playerMove(-1);      // 左
+            else if (event.keyCode === 39) playerMove(1);  // 右
+            else if (event.keyCode === 40) playerDrop();   // 下
+            else if (event.keyCode === 38) playerRotate(1); // 上
+        });
+
+        stopBtn.disabled = true; // 最初はストップできない
+        draw();
+    </script>
+</body>
+</html>
