@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>メニュー - アニマル育成</title>
+    <style>
+        body { font-family: sans-serif; background: #eceff1; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); width: 400px; text-align: center; }
+        h1 { color: #37474f; margin-bottom: 30px; }
+        .menu-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
+        .menu-item { 
+            padding: 20px; border: none; border-radius: 12px; font-size: 1.1em; font-weight: bold; color: white; cursor: pointer; 
+            transition: transform 0.2s, box-shadow 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .menu-item:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        
+        .btn-race { background: #e67e22; } /* 橙 */
+        .btn-game { background: #3498db; } /* 青 */
+        .btn-six  { background: #9b59b6; } /* 紫 */
+        .btn-my   { background: #27ae60; } /* 緑 */
+        .btn-gatya { background: #f1c40f; } /* 黄 */
+        
+        .sub-menu { margin-left: 20px; padding: 10px; border-left: 3px solid #eee; display: flex; flex-direction: column; gap: 10px; }
+        .user-info { margin-bottom: 20px; font-size: 0.9em; color: #546e7a; }
+    </style>
+</head>
+<body>
+    <div class="menu-grid">
+        <button class="menu-item btn-race" onclick="location.href='race.html'">🏁 レースに出場する</button>
+        <button class="menu-item btn-my" onclick="location.href='my_animal.html'">🐾 マイ動物</button>
+        <button class="menu-item btn-gatya" onclick="location.href='gatya.html'">💎 ガチャ</button>
+    </div>
+
+        <button onclick="logout()" style="margin-top:30px; background:none; border:none; color:#95a5a6; text-decoration:underline; cursor:pointer;">ログアウト</button>
+    </div>
+
+    <script>
+        window.onload = () => {
+            const session = localStorage.getItem("animal_user");
+            if (!session) {
+                location.href = "index.html";
+                return;
+            }
+            const user = JSON.parse(session);
+            document.getElementById('user-display').innerText = `飼育員: ${user.trainerName} さん`;
+        };
+
+        function logout() {
+            localStorage.removeItem("animal_user");
+            location.href = "index.html";
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>レース選択 - アニマル育成</title>
+    <style>
+        body { font-family: sans-serif; background: #eceff1; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); width: 450px; text-align: center; }
+        .race-card { 
+            margin: 15px 0; padding: 20px; border: 2px solid #eee; border-radius: 15px; cursor: pointer; 
+            transition: 0.3s; display: flex; flex-direction: column; align-items: flex-start; position: relative;
+        }
+        .race-card:hover { border-color: #3498db; background: #f7fbff; transform: scale(1.02); }
+        .race-title { font-size: 1.2em; font-weight: bold; color: #2c3e50; }
+        .race-desc { font-size: 0.85em; color: #7f8c8d; margin-top: 5px; text-align: left; }
+        .badge { position: absolute; top: 15px; right: 15px; padding: 4px 8px; border-radius: 5px; color: white; font-size: 0.7em; font-weight: bold; }
+        
+        .bg-blue { background: #3498db; }
+        .bg-purple { background: #9b59b6; }
+        .back-btn { margin-top: 20px; background: #95a5a6; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>出場レース選択</h1>
+        <p style="color: #666;">挑戦するレースの形式を選んでください</p>
+
+        <div class="race-card" onclick="location.href='game.html'">
+            <span class="badge bg-blue">初心者〜</span>
+            <div class="race-title">🏆 総合レース</div>
+            <div class="race-desc">
+                全ての能力を育成し、世界ランキングを目指す標準的なモード。
+            </div>
+        </div>
+
+        <div class="race-card" onclick="location.href='six.html'">
+            <span class="badge bg-purple">上級者向け</span>
+            <div class="race-title">🏅 六大レース</div>
+            <div class="race-desc">
+                特定の能力が重視される、6つの過酷なレースを勝ち抜く特別モード。
+            </div>
+        </div>
+
+        <button class="back-btn" onclick="location.href='menu.html'">戻る</button>
+    </div>
+</body>
+</html>
