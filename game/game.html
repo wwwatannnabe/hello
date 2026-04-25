@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>アニマル育成：オンライン世界ランキング</title>
+    <style>
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #eceff1; display: flex; justify-content: center; padding: 20px; }
+        #game-box { width: 100%; max-width: 850px; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #2c3e50; margin-bottom: 25px; }
+        .selection-list { display: flex; flex-direction: column; gap: 12px; margin-top: 15px; }
+        .animal-row { display: grid; grid-template-columns: 100px 1fr 100px; align-items: center; border: 1px solid #ddd; padding: 15px; border-radius: 12px; cursor: pointer; transition: 0.2s; background: #fff; }
+        .animal-row:hover { border-color: #3498db; background: #ebf5fb; transform: scale(1.01); }
+        .animal-name { font-weight: bold; font-size: 1.2em; color: #333; text-align: center; }
+        .gauge-container { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 20px; padding: 0 20px; }
+        .gauge-bar-wrapper { display: flex; align-items: center; font-size: 0.75em; color: #555; }
+        .gauge-label { width: 35px; font-weight: bold; }
+        .gauge-bg { flex: 1; background: #eee; height: 8px; border-radius: 4px; overflow: hidden; position: relative; }
+        .gauge-fill { height: 100%; background: #3498db; border-radius: 4px; transition: width 0.3s; }
+        .fill-speed { background: #e74c3c; } .fill-accel { background: #e67e22; } .fill-stamina { background: #27ae60; }
+        .fill-power { background: #8e44ad; } .fill-swimming { background: #2980b9; } .fill-iq { background: #f1c40f; }
+        #name-input-area { background: #fff9c4; padding: 25px; border-radius: 15px; border: 2px dashed #f39c12; text-align: center; margin: 20px 0; }
+        input[type="text"] { padding: 10px; border-radius: 5px; border: 1px solid #ddd; width: 200px; margin: 5px; font-size: 1em; background: #f9f9f9; }
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: #f8f9fa; padding: 15px; border-radius: 10px; margin: 20px 0; }
+        .stats-grid div { text-align: center; padding: 10px; background: white; border-radius: 8px; border: 1px solid #eee; }
+        button { padding: 12px 20px; border: none; border-radius: 8px; background: #3498db; color: white; cursor: pointer; font-weight: bold; }
+        .rest-btn { background: #27ae60; width: 100%; margin-top: 10px; font-size: 1.1em; }
+        .start-btn { background: #f39c12; font-size: 1.2em; padding: 15px 40px; }
+        #log { height: 100px; overflow-y: auto; background: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 8px; margin-top: 15px; font-size: 0.85em; text-align: left; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
+        .my-row { background: #fff9c4; font-weight: bold; }
+        #event-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 25px; border-radius: 15px; text-align: center; max-width: 400px; }
+    </style>
+</head>
+<body>
+
+<div id="event-modal">
+    <div class="modal-content">
+        <h2 style="color: #e91e63;">✨ 超ラッキーイベント ✨</h2>
+        <p>体力全回復 ＆ 指定能力+50！</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;" id="event-btns"></div>
+    </div>
+</div>
+
+<div id="game-box">
+    <h1>アニマル育成：世界への道</h1>
+    
+    <div id="setup-screen">
+        <h3 id="setup-msg" style="text-align: center;">育成するアニマルを選んでください</h3>
+        <div id="animal-selection" class="selection-list"></div>
+        
+        <div id="name-input-area" style="display:none;">
+            <h3 id="selected-animal-display"></h3>
+            <div>飼育員: <b id="display-trainer-name"></b></div>
+            <div style="margin-top:10px;">ペット名: <input type="text" id="p-name" placeholder="この子の名前"></div>
+            <div style="margin-top:20px;">
+                <button onclick="confirmStart()" class="start-btn">育成開始！</button>
+                <button onclick="cancelSelection()" style="background:#95a5a6; margin-left:10px;">選び直す</button>
+            </div>
+        </div>
+
+        <div id="world-ranking" style="margin-top:40px; border-top:3px double #eee; padding-top:20px;">
+            <h3>🌏 世界ランキング TOP10</h3>
+            <div id="world-list">読み込み中...</div>
+        </div>
+    </div>
+
+    <div id="train-screen" style="display:none;">
+        <h2 id="phase-title" style="color: #3498db; text-align: center;">第一次育成期間</h2>
+        <h3 id="status-title" style="text-align: center;"></h3>
+        <p>残りターン: <b id="turn-display">20</b></p>
+        <div style="width:100%; background:#eee; height:15px; border-radius:10px; overflow:hidden; margin-bottom:10px;">
+            <div id="v-bar" style="height:100%; background:#2ecc71; width:100%; transition: 0.4s;"></div>
+        </div>
+        <div id="stats-view" class="stats-grid"></div>
+        <div id="action-buttons" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;"></div>
+        <button onclick="doRest()" class="rest-btn">休憩 (体力50回復)</button>
+        <div id="log"></div>
+    </div>
+
+    <div id="result-screen" style="display:none;">
+        <div id="match-header" style="font-size:1.5em; font-weight:bold; color:#e67e22; text-align:center; margin-bottom:10px;"></div>
+        <div id="result-list"></div>
+        <div id="match-footer" style="margin-top:20px; text-align: center;">
+            <button id="next-phase-btn" onclick="nextPhase()" class="start-btn">次のフェーズへ</button>
+            <p id="db-status" style="color: #3498db; font-weight: bold; margin-top: 10px;"></p>
+        </div>
+    </div>
+</div>
+
+<script>
+const API_URL = "https://animal-v3.kousuke555go.workers.dev"; // 自分のWorker URL
+const animalMaster = [
+    {id:1, species:"犬", sp:60, ac:20, st:20, pw:25, sw:35, iq:0},
+    {id:2, species:"猫", sp:20, ac:60, st:20, pw:25, sw:0, iq:35},
+    {id:3, species:"鳥", sp:20, ac:20, st:60, pw:0, sw:25, iq:35},
+    {id:4, species:"猿", sp:20, ac:30, st:10, pw:30, sw:20, iq:50},
+    {id:5, species:"豚", sp:40, ac:30, st:30, pw:50, sw:10, iq:0},
+    {id:6, species:"馬", sp:90, ac:0, st:20, pw:20, sw:0, iq:30},
+    {id:7, species:"牛", sp:30, ac:20, st:0, pw:30, sw:10, iq:10},
+    {id:8, species:"狐", sp:20, ac:20, st:20, pw:0, sw:10, iq:90},
+    {id:9, species:"熊", sp:20, ac:20, st:10, pw:90, sw:20, iq:0},
+    {id:10, species:"虎", sp:60, ac:0, st:40, pw:60, sw:0, iq:0}
+];
+
+let playerUser = null; 
+let player = { name:"", species:"", speed:0, accel:0, stamina:0, power:0, swimming:0, iq:0 };
+let vitality = 100, turns = 20, gameState = "TRAIN1", selectedAnimalData = null, finalOpponents = [];
+
+// ページ読み込み時の処理
+window.onload = () => {
+    const session = localStorage.getItem("animal_user");
+    if (!session) {
+        alert("ログインしてください");
+        location.href = "index.html"; 
+        return;
+    }
+    playerUser = JSON.parse(session);
+    document.getElementById('display-trainer-name').innerText = playerUser.trainerName;
+    
+    renderAnimalSelection();
+    fetchWorldRank();
+};
+
+async function fetchWorldRank() {
+    const list = document.getElementById('world-list');
+    try {
+        const res = await fetch(API_URL + "/ranking");
+        const data = await res.json();
+        if(!data || data.length === 0) { list.innerText = "記録なし"; return; }
+        let html = '<table><tr><th>順位</th><th>飼育員</th><th>ペット</th><th>スコア</th></tr>';
+        data.forEach((d, i) => { 
+            html += `<tr><td>${i+1}</td><td>${d.tN}</td><td><b>${d.pN}</b>(${d.sp})</td><td>${d.score}</td></tr>`; 
+        });
+        list.innerHTML = html + '</table>';
+    } catch (e) { list.innerText = "ランキング取得失敗"; }
+}
+
+function renderAnimalSelection() {
+    const div = document.getElementById('animal-selection');
+    div.innerHTML = '';
+    animalMaster.forEach(a => {
+        let row = document.createElement('div');
+        row.className = 'animal-row';
+        const stats = [{l:'速', v:a.sp, c:'fill-speed'}, {l:'加', v:a.ac, c:'fill-accel'}, {l:'体', v:a.st, c:'fill-stamina'}, {l:'力', v:a.pw, c:'fill-power'}, {l:'泳', v:a.sw, c:'fill-swimming'}, {l:'知', v:a.iq, c:'fill-iq'}];
+        let gaugeHtml = stats.map(s => `<div class="gauge-bar-wrapper"><span class="gauge-label">${s.l}</span><div class="gauge-bg"><div class="gauge-fill ${s.c}" style="width:${s.v}%"></div></div></div>`).join('');
+        row.innerHTML = `<div class="animal-name">${a.species}</div><div class="gauge-container">${gaugeHtml}</div><button style="padding:8px;">選択</button>`;
+        row.onclick = () => selectAnimal(a);
+        div.appendChild(row);
+    });
+}
+
+function selectAnimal(data) {
+    selectedAnimalData = data;
+    document.getElementById('animal-selection').style.display = 'none';
+    document.getElementById('setup-msg').style.display = 'none';
+    document.getElementById('name-input-area').style.display = 'block';
+    document.getElementById('selected-animal-display').innerText = `✨ 「${data.species}」を育成します`;
+}
+
+function cancelSelection() {
+    document.getElementById('animal-selection').style.display = 'flex';
+    document.getElementById('setup-msg').style.display = 'block';
+    document.getElementById('name-input-area').style.display = 'none';
+}
+
+function confirmStart() {
+    const n = document.getElementById('p-name').value;
+    if(!n) return alert("ペットの名前を決めてね");
+    player = { ...player, name:n, species:selectedAnimalData.species, speed:selectedAnimalData.sp, accel:selectedAnimalData.ac, stamina:selectedAnimalData.st, power:selectedAnimalData.pw, swimming:selectedAnimalData.sw, iq:selectedAnimalData.iq };
+    document.getElementById('setup-screen').style.display = 'none';
+    startTrainingPhase("TRAIN1", 20, "第一次育成期間");
+}
+
+function startTrainingPhase(state, t, title) {
+    gameState = state; turns = t;
+    document.getElementById('train-screen').style.display = 'block';
+    document.getElementById('result-screen').style.display = 'none';
+    document.getElementById('phase-title').innerText = title;
+    document.getElementById('status-title').innerText = `${player.name} (${player.species})`;
+    renderActionButtons();
+    updateUI();
+}
+
+function renderActionButtons() {
+    const area = document.getElementById('action-buttons');
+    const types = [['speed','走り込み'],['accel','ダッシュ'],['stamina','長距離'],['power','筋トレ'],['swimming','水泳'],['iq','勉強']];
+    area.innerHTML = '';
+    types.forEach(t => {
+        let b = document.createElement('button'); b.innerText = t[1]; b.onclick = () => doTrain(t[0]);
+        area.appendChild(b);
+    });
+}
+
+function updateUI() {
+    document.getElementById('stats-view').innerHTML = `<div>速:<b>${player.speed}</b></div><div>加:<b>${player.accel}</b></div><div>体:<b>${player.stamina}</b></div><div>力:<b>${player.power}</b></div><div>泳:<b>${player.swimming}</b></div><div>知:<b>${player.iq}</b></div>`;
+    document.getElementById('turn-display').innerText = turns;
+    document.getElementById('v-bar').style.width = vitality + "%";
+}
+
+function doTrain(type) {
+    if(vitality <= 30 && Math.random() < 0.3) {
+        addLog("⚠️ 無理して怪我をした！"); vitality = 40; turns--; updateUI(); 
+        if(turns <= 0) runMatch(); return;
+    }
+    let boost = Math.floor(Math.random()*8 + 12);
+    player[type] += boost;
+    vitality = Math.max(0, vitality - 20);
+    turns--;
+    addLog(`${type}が ${boost} 上がった！`);
+    updateUI();
+    if(turns > 0 && Math.random() < 0.1) triggerLuckyEvent();
+    else if(turns <= 0) runMatch();
+}
+
+function triggerLuckyEvent() {
+    document.getElementById('event-modal').style.display = 'flex';
+    const area = document.getElementById('event-btns');
+    area.innerHTML = '';
+    ['speed','power','swimming','iq'].forEach(t => {
+        let b = document.createElement('button'); b.innerText = t + " +50";
+        b.onclick = () => { player[t]+=50; vitality=100; document.getElementById('event-modal').style.display='none'; updateUI(); };
+        area.appendChild(b);
+    });
+}
+
+function doRest() { vitality = Math.min(100, vitality + 50); turns--; addLog("休憩した。"); updateUI(); if(turns === 0) runMatch(); }
+
+function genAllOtherRivals(baseScore, ratio) {
+    let rivals = animalMaster.filter(a => a.species !== player.species);
+    return rivals.map(r => ({ name: `ライバル${r.species}`, score: Math.floor(baseScore * ratio + Math.random() * 80 - 40), isPlayer: false }));
+}
+
+function renderMatchResult(list) {
+    let html = '<table><tr><th>順位</th><th>名前</th><th>スコア</th></tr>';
+    list.forEach((e, i) => { html += `<tr class="${e.isPlayer?'my-row':''}"><td>${i+1}位</td><td>${e.name}</td><td>${e.score}</td></tr>`; });
+    document.getElementById('result-list').innerHTML = html + '</table>';
+}
+
+async function runMatch() {
+    document.getElementById('train-screen').style.display = 'none';
+    document.getElementById('result-screen').style.display = 'block';
+    const header = document.getElementById('match-header');
+    const resultList = document.getElementById('result-list');
+    const footer = document.getElementById('match-footer');
+
+    resultList.innerHTML = "<h2 style='text-align:center; padding:50px;'>🏁 試合中... 🏁</h2>";
+    footer.style.display = "none";
+
+    await new Promise(r => setTimeout(r, 2000)); 
+
+    footer.style.display = "block";
+    let score = player.speed + player.accel + player.stamina + player.power + player.swimming + player.iq;
+    let enemies = [];
+    let matchTitle = "";
+
+    if (gameState === "TRAIN1") {
+        matchTitle = "【予選大会】"; gameState = "MATCH1"; enemies = genAllOtherRivals(score, 0.9);
+    } else if (gameState === "TRAIN2") {
+        matchTitle = "【最終予選】"; gameState = "MATCH2"; enemies = genAllOtherRivals(score, 1.0);
+    }
+
+    let all = [{name: player.name, score: score, isPlayer: true}, ...enemies].sort((a, b) => b.score - a.score);
+    let playerRank = all.findIndex(x => x.isPlayer) + 1;
+
+    if (gameState === "MATCH2") finalOpponents = all.filter(x => !x.isPlayer).slice(0, 5);
+
+    header.innerText = matchTitle;
+    renderMatchResult(all);
+
+    const btn = document.getElementById('next-phase-btn');
+    if (gameState === "MATCH1") {
+        btn.innerText = "後半(残り10T)へ";
+    } else if (gameState === "MATCH2") {
+        if (playerRank <= 5) { btn.innerText = "決勝進出！"; gameState = "READY_FINAL"; }
+        else { btn.innerText = "敗退...タイトルへ"; btn.onclick = () => location.reload(); }
+    }
+}
+
+function nextPhase() {
+    if (gameState === "MATCH1") startTrainingPhase("TRAIN2", 10, "最終追い込み期間");
+    else if (gameState === "READY_FINAL") runFinalMatch();
+}
+
+async function runFinalMatch() {
+    const header = document.getElementById('match-header');
+    const resultList = document.getElementById('result-list');
+    const footer = document.getElementById('match-footer');
+
+    header.innerText = "🏆 最終世界決勝 🏆";
+    resultList.innerHTML = "<h2 style='text-align:center; padding:50px;'>🏆 WORLD FINAL 🏆</h2>";
+    document.getElementById('next-phase-btn').style.display = "none";
+
+    await new Promise(r => setTimeout(r, 3000)); 
+
+    let score = player.speed + player.accel + player.stamina + player.power + player.swimming + player.iq;
+    let enemies = finalOpponents.map(opp => ({ ...opp, score: Math.floor(opp.score * 1.1 + Math.random() * 50) }));
+    let all = [{name: player.name, score: score, isPlayer: true}, ...enemies].sort((a, b) => b.score - a.score);
+    
+    renderMatchResult(all);
+    
+    const status = document.getElementById('db-status');
+    status.innerText = "☁️ 記録を送信中...";
+    try {
+        await fetch(API_URL + "/ranking", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                username: playerUser.username, 
+                petName: player.name, 
+                species: player.species, 
+                score: score 
+            })
+        });
+        status.innerText = "✅ ランキング登録完了！";
+    } catch (e) { status.innerText = "❌ 送信失敗"; }
+    
+    let rb = document.createElement("button"); rb.innerText = "タイトルに戻る"; rb.onclick = () => location.reload();
+    footer.appendChild(rb);
+}
+
+function addLog(msg) {
+    const l = document.getElementById('log');
+    const d = document.createElement('div'); d.innerText = "> " + msg;
+    l.prepend(d);
+}
+</script>
+</body>
+</html>
