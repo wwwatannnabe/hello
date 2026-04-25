@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>アニマル育成：オンライン世界ランキング</title>
+    <style>
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; }
+        #game-box { width: 100%; max-width: 800px; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .selection-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+        .animal-card { border: 1px solid #ddd; padding: 15px; border-radius: 10px; cursor: pointer; transition: 0.3s; background: #fff; text-align: center; }
+        .animal-card:hover { border-color: #3498db; background: #ebf5fb; transform: translateY(-2px); }
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: #f8f9fa; padding: 15px; border-radius: 10px; margin: 20px 0; }
+        button { padding: 12px; border: none; border-radius: 8px; background: #3498db; color: white; cursor: pointer; font-weight: bold; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .rest-btn { background: #27ae60; width: 100%; margin-top: 10px; }
+        #log { height: 120px; overflow-y: auto; background: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 8px; margin-top: 15px; font-family: monospace; font-size: 0.8em; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9em; }
+        th, td { padding: 10px; border-bottom: 1px solid #ddd; text-align: left; }
+        .my-row { background: #fff9c4; font-weight: bold; }
+        .world-badge { background: #e91e63; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7em; margin-right: 5px; }
+        #event-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 25px; border-radius: 15px; text-align: center; max-width: 400px; }
+    </style>
+</head>
+<body>
+
+<div id="event-modal">
+    <div class="modal-content">
+        <h2 style="color: #e91e63;">✨ 超ラッキーイベント ✨</h2>
+        <p>体力が全回復し、選んだ能力が50アップ！</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;" id="event-btns"></div>
+    </div>
+</div>
+
+<div id="game-box">
+    <h1>アニマル育成：世界ランキング</h1>
+
+    <div id="setup-screen">
+        <div style="margin-bottom:15px; background: #fdfdfd; padding: 15px; border-radius: 10px; border: 1px solid #eee;">
+            育成者名: <input type="text" id="p-trainer" placeholder="あなたの名前" value="名無しさん" style="padding:5px;">
+            ペット名: <input type="text" id="p-name" placeholder="動物の名前" style="padding:5px;">
+        </div>
+        <div id="animal-selection" class="selection-grid"></div>
+
+        <div id="world-ranking" style="margin-top:30px; border-top:3px double #eee; padding-top:20px;">
+            <h3>🌏 世界のトップアニマル TOP10</h3>
+            <div id="world-list">DBに接続中...</div>
+        </div>
+    </div>
+
+    <div id="train-screen" style="display:none;">
+        <h2 id="status-title"></h2>
+        <p>残りターン: <b id="turn-display">20</b> / 20</p>
+        <div style="width:100%; background:#eee; height:15px; border-radius:10px; overflow:hidden;">
+            <div id="v-bar" style="height:100%; background:#2ecc71; width:100%; transition: 0.3s;"></div>
+        </div>
+        <div id="stats-view" class="stats-grid"></div>
+        <div id="action-buttons" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;"></div>
+        <button onclick="doRest()" class="rest-btn">休憩 (体力50回復)</button>
+        <div id="log"></div>
+    </div>
+
+    <div id="result-screen" style="display:none;">
+        <h2>大会結果発表</h2>
+        <div id="result-list"></div>
+        <p id="db-status" style="color: #3498db; font-weight: bold; margin-top: 15px;"></p>
+        <button onclick="location.reload()" style="margin-top:20px; background:#95a5a6;">タイトルへ戻る</button>
+    </div>
+</div>
+
+<script>
+    
+const API_URL = "https://hello.kousuke555go.workers.dev/";
+
+const animalMaster = [
+    {id:1, species:"犬", sp:50, ac:10, st:10, pw:15, sw:25, iq:-10},
+    {id:2, species:"猫", sp:10, ac:50, st:10, pw:10, sw:-10, iq:30},
+    {id:3, species:"鳥", sp:10, ac:10, st:50, pw:0, sw:-10, iq:40},
+    {id:4, species:"猿", sp:10, ac:20, st:0, pw:20, sw:10, iq:40},
+    {id:5, species:"豚", sp:30, ac:20, st:20, pw:50, sw:0, iq:-20},
+    {id:6, species:"馬", sp:60, ac:10, st:30, pw:30, sw:-60, iq:30},
+    {id:7, species:"牛", sp:30, ac:20, st:0, pw:30, sw:10, iq:10},
+    {id:8, species:"狐", sp:10, ac:20, st:10, pw:0, sw:10, iq:50},
+    {id:9, species:"熊", sp:20, ac:10, st:10, pw:60, sw:20, iq:-20},
+    {id:10, species:"虎", sp:40, ac:0, st:30, pw:40, sw:-10, iq:0}
+];
+
+let player = { trainer:"", name:"", species:"", speed:0, accel:0, stamina:0, power:0, swimming:0, iq:0, sid:0 };
+let vitality = 100, turns = 20, injuryTurns = 0;
+
+window.onload = async () => {
+    renderAnimalSelection();
+    fetchWorldRank();
+};
+
+async function fetchWorldRank() {
+    const list = document.getElementById('world-list');
+    try {
+        const res = await fetch(API_URL);
+        const data = await res.json();
+        if(!data || data.length === 0) { list.innerText = "まだ記録がありません。最初の入賞者になろう！"; return; }
+        let html = '<table><tr><th>順位</th><th>アニマル</th><th>スコア</th></tr>';
+        data.forEach((d, i) => {
+            html += `<tr><td>${i+1}</td><td><span class="world-badge">GHOST</span><b>${d.pN}</b>(${d.sp})<br><small>by ${d.tN}</small></td><td>${d.score}</td></tr>`;
+        });
+        list.innerHTML = html + '</table>';
+    } catch (e) {
+        list.innerText = "ランキングの取得に失敗しました。URLを確認してください。";
+    }
+}
+
+function renderAnimalSelection() {
+    const div = document.getElementById('animal-selection');
+    animalMaster.forEach(a => {
+        let card = document.createElement('div');
+        card.className = 'animal-card';
+        card.innerHTML = `<b>${a.species}</b><br><small>初期値合計: ${a.sp+a.ac+a.st+a.pw+a.sw+a.iq}</small>`;
+        card.onclick = () => initGame(a);
+        div.appendChild(card);
+    });
+}
+
+function initGame(data) {
+    const n = document.getElementById('p-name').value, t = document.getElementById('p-trainer').value;
+    if(!n || !t) return alert("名前と育成者名を入力してください！");
+    player = { ...player, trainer:t, name:n, species:data.species, speed:data.sp, accel:data.ac, stamina:data.st, power:data.pw, swimming:data.sw, iq:data.iq, sid:data.id };
+    document.getElementById('setup-screen').style.display = 'none';
+    document.getElementById('train-screen').style.display = 'block';
+    document.getElementById('status-title').innerText = `${player.name} @${player.trainer}`;
+    renderActionButtons();
+    updateUI();
+}
+
+function renderActionButtons() {
+    const area = document.getElementById('action-buttons');
+    const types = [['speed','走り込み'],['accel','ダッシュ'],['stamina','長距離'],['power','筋トレ'],['swimming','水泳'],['iq','勉強']];
+    area.innerHTML = '';
+    types.forEach(t => {
+        let b = document.createElement('button'); b.innerText = t[1]; b.onclick = () => doTrain(t[0]);
+        area.appendChild(b);
+    });
+}
+
+function updateUI() {
+    document.getElementById('stats-view').innerHTML = `<div>速:<b>${player.speed}</b></div><div>加:<b>${player.accel}</b></div><div>体:<b>${player.stamina}</b></div><div>力:<b>${player.power}</b></div><div>泳:<b>${player.swimming}</b></div><div>知:<b>${player.iq}</b></div>`;
+    document.getElementById('turn-display').innerText = turns;
+    document.getElementById('v-bar').style.width = vitality + "%";
+    const btns = document.querySelectorAll('#action-buttons button, .rest-btn');
+    if(injuryTurns > 0) {
+        btns.forEach(b => b.disabled = true);
+        setTimeout(() => { injuryTurns--; turns--; updateUI(); if(turns<=0) showResult(); }, 800);
+    } else {
+        btns.forEach(b => b.disabled = (turns <= 0));
+    }
+}
+
+function doTrain(type) {
+    if(vitality <= 50 && Math.random()*100 < (55 - vitality)) {
+        injuryTurns = 3; addLog("怪我をした！3ターン治療が必要です。"); updateUI(); return;
+    }
+    let boost = Math.floor((Math.random()*5 + 8) * (vitality/100 + 0.3));
+    player[type] += boost;
+    vitality = Math.max(0, vitality - 20);
+    turns--;
+    addLog(`${type}が ${boost} アップ！`);
+    updateUI();
+
+    if(turns > 0 && Math.random() < 0.2) {
+        setTimeout(triggerLuckyEvent, 500);
+    } else if(turns <= 0) {
+        setTimeout(showResult, 800);
+    }
+}
+
+function triggerLuckyEvent() {
+    document.getElementById('event-modal').style.display = 'flex';
+    const area = document.getElementById('event-btns');
+    area.innerHTML = '';
+    ['speed','accel','stamina','power','swimming','iq'].forEach(t => {
+        let b = document.createElement('button'); b.innerText = t + "+50";
+        b.onclick = () => { player[t]+=50; vitality=100; document.getElementById('event-modal').style.display='none'; updateUI(); };
+        area.appendChild(b);
+    });
+}
+
+function doRest() { vitality = Math.min(100, vitality + 50); turns--; updateUI(); if(turns === 0) showResult(); }
+
+async function showResult() {
+    document.getElementById('train-screen').style.display = 'none';
+    document.getElementById('result-screen').style.display = 'block';
+    
+    let score = player.speed + player.accel + player.stamina + player.power + player.swimming + player.iq;
+    let entries = [{ ...player, score: score }];
+
+    // CPU追加
+    animalMaster.slice(0, 5).forEach(m => {
+        let off = () => Math.floor(Math.random()*50 + 100);
+        entries.push({ name: "野生の"+m.species, trainer: "CPU", species: m.species, score: (m.sp+off())+(m.ac+off())+(m.st+off())+(m.pw+off())+(m.sw+off())+(m.iq+off()) });
+    });
+
+    entries.sort((a,b) => b.score - a.score);
+    let html = '<table><tr><th>順位</th><th>名前(育成者)</th><th>スコア</th></tr>' + 
+        entries.map((e, i) => `<tr class="${e.name===player.name?'my-row':''}"><td>${i+1}</td><td>${e.name}(${e.trainer})</td><td>${e.score}</td></tr>`).join('') + '</table>';
+    document.getElementById('result-list').innerHTML = html;
+
+    // Cloudflareへ送信
+    const status = document.getElementById('db-status');
+    status.innerText = "世界ランキングに送信中...";
+    try {
+        await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ pN: player.name, tN: player.trainer, sp: player.species, score: score })
+        });
+        status.innerText = "世界ランキングへの登録が完了しました！";
+    } catch (e) {
+        status.innerText = "送信に失敗しました。";
+    }
+}
+
+function addLog(msg) {
+    const div = document.createElement('div'); div.innerText = "> " + msg;
+    document.getElementById('log').prepend(div);
+}
+</script>
+</body>
+</html>
