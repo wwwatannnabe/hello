@@ -321,7 +321,7 @@ async function runMatch() {
     if (gameState === "TRAIN1") {
         matchTitle = "【予選大会】"; gameState = "MATCH1"; enemies = genAllOtherRivals(score, 0.9);
     } else if (gameState === "TRAIN2") {
-        matchTitle = "【最終予選】"; gameState = "MATCH2"; enemies = genAllOtherRivals(score, 1.0);
+        matchTitle = "【最終予選】"; gameState = "MATCH2"; enemies = genAllOtherRivals(score, 0.9);
     }
 
     let all = [{name: player.name, score: score, isPlayer: true}, ...enemies].sort((a, b) => b.score - a.score);
