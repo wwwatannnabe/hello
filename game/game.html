@@ -185,10 +185,48 @@ function startTrainingPhase(state, t, title) {
 
 function renderActionButtons() {
     const area = document.getElementById('action-buttons');
-    const types = [['speed','走り込み'],['accel','ダッシュ'],['stamina','長距離'],['power','筋トレ'],['swimming','水泳'],['iq','勉強']];
+    // 設定：[キー, 表示名, メイン表示, 小アップ対象表示, 小アップ対象キー]
+    const configs = [
+        ['speed',    '走り込み', '速', '加', 'accel'],
+        ['accel',    'ダッシュ', '加', '力', 'power'],
+        ['stamina',  '長距離',   '体', '知', 'iq'],
+        ['power',    '筋トレ',   '力', '加', 'accel'],
+        ['swimming', '水泳',     '泳', '力', 'power'],
+        ['iq',       '勉強',     '知', '回復', null]
+    ];
+    
     area.innerHTML = '';
-    types.forEach(t => {
-        let b = document.createElement('button'); b.innerText = t[1]; b.onclick = () => doTrain(t[0]);
+    configs.forEach(conf => {
+        let b = document.createElement('button');
+        b.style.display = 'flex';
+        b.style.flexDirection = 'column';
+        b.style.alignItems = 'center';
+        b.style.padding = '10px 2px';
+        b.style.minHeight = '60px';
+        b.style.justifyContent = 'center';
+
+        // 1段目：トレーニング名
+        let nameLabel = document.createElement('span');
+        nameLabel.innerText = conf[1];
+        nameLabel.style.fontSize = '0.95em';
+        nameLabel.style.fontWeight = 'bold';
+
+        // 2段目：上昇ステータス説明（文字色を白に設定）
+        let infoLabel = document.createElement('span');
+        infoLabel.style.color = "#ffffff"; // 説明を白色に
+        infoLabel.style.fontSize = '0.75em';
+        infoLabel.style.marginTop = '4px';
+        
+        if (conf[0] === 'iq') {
+            infoLabel.innerText = `${conf[2]}↑＋${conf[3]}`;
+        } else {
+            infoLabel.innerText = `${conf[2]}↑ (サブ効果:${conf[3]}↑)`;
+        }
+
+        b.appendChild(nameLabel);
+        b.appendChild(infoLabel);
+
+        b.onclick = () => doTrain(conf[0], conf[4]);
         area.appendChild(b);
     });
 }
@@ -199,19 +237,44 @@ function updateUI() {
     document.getElementById('v-bar').style.width = vitality + "%";
 }
 
-function doTrain(type) {
-    if(vitality <= 30 && Math.random() < 0.3) {
-        addLog("⚠️ 無理して怪我をした！"); vitality = 40; turns--; updateUI(); 
-        if(turns <= 0) runMatch(); return;
+function doTrain(type, subType) {
+    // 勉強（iq）以外は体力を消費し、失敗判定がある
+    if (type !== 'iq') {
+        if (vitality <= 30 && Math.random() < 0.3) {
+            addLog("⚠️ 無理して怪我をした！");
+            vitality = 40;
+            turns--;
+            updateUI();
+            if (turns <= 0) runMatch();
+            return;
+        }
+        vitality = Math.max(0, vitality - 20);
+    } else {
+        // 勉強（iq）の場合のみ体力を30回復
+        vitality = Math.min(100, vitality + 10);
+        addLog("勉強して知識が深まった。ついでにリフレッシュした！");
     }
-    let boost = Math.floor(Math.random()*8 + 12);
+
+    // メインステータスの上昇量 (12〜20)
+    let boost = Math.floor(Math.random() * 8 + 12);
     player[type] += boost;
-    vitality = Math.max(0, vitality - 20);
-    turns--;
     addLog(`${type}が ${boost} 上がった！`);
+
+    // サブステータスの小アップ (3〜7)
+    if (subType) {
+        let subBoost = Math.floor(Math.random() * 5 + 3);
+        player[subType] += subBoost;
+        addLog(`  (ついでに${subType}も ${subBoost} アップ)`);
+    }
+
+    turns--;
     updateUI();
-    if(turns > 0 && Math.random() < 0.1) triggerLuckyEvent();
-    else if(turns <= 0) runMatch();
+
+    if (turns > 0 && Math.random() < 0.1) {
+        triggerLuckyEvent();
+    } else if (turns <= 0) {
+        runMatch();
+    }
 }
 
 function triggerLuckyEvent() {
