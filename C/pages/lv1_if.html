@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>if文・switch文 - C言語 学習ガイド</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <div class="container">
+    <a href="../c.html" class="back-link">← 一覧（c.html）に戻る</a>
+
+    <header>
+      <span class="badge lv1">Lv.1 入門</span>
+      <h1>条件分岐（if文 / switch文）</h1>
+    </header>
+
+    <!-- ========== if文 ========== -->
+    <section class="content-box">
+      <h2>if文：条件が成り立つときだけ動く</h2>
+      <p>条件式が<strong>真（成り立つ）ときだけ処理を実行する</strong>基本の分岐だよ。<br>
+      「もし〜ならA、そうでなければB」のように、範囲や条件式で道筋を分けられます。</p>
+
+      <div class="diagram-area">
+        <svg width="540" height="225" viewBox="0 0 540 225" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow-if" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 10 5 L 0 9 z" fill="#475569"/>
+            </marker>
+          </defs>
+
+          <!-- 開始 -->
+          <rect x="20" y="82" width="95" height="44" rx="6" fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+          <text x="67" y="109" font-size="13" font-weight="bold" text-anchor="middle" fill="#334155">開始</text>
+
+          <!-- 矢印 開始 -> 条件式 -->
+          <line x1="115" y1="104" x2="155" y2="104" stroke="#475569" stroke-width="2" marker-end="url(#arrow-if)"/>
+
+          <!-- 条件式（ひし形） -->
+          <polygon points="225,54 295,104 225,154 155,104" fill="#fefce8" stroke="#eab308" stroke-width="2"/>
+          <text x="225" y="100" font-size="13" font-weight="bold" text-anchor="middle" fill="#854d0e">条件式</text>
+          <text x="225" y="118" font-size="11" text-anchor="middle" fill="#a16207">score &gt;= 60</text>
+
+          <!-- 真 (True) ルート -->
+          <polyline points="295,104 340,104 340,59 365,59" fill="none" stroke="#10b981" stroke-width="2" marker-end="url(#arrow-if)"/>
+          <text x="325" y="51" font-size="11" font-weight="bold" text-anchor="middle" fill="#10b981">真 (True)</text>
+
+          <rect x="365" y="35" width="150" height="48" rx="6" fill="#f0fdf4" stroke="#10b981" stroke-width="2"/>
+          <text x="440" y="64" font-size="12" font-weight="bold" text-anchor="middle" fill="#065f46">if の中の処理</text>
+
+          <!-- 偽 (False) ルート -->
+          <polyline points="295,104 340,104 340,151 365,151" fill="none" stroke="#ef4444" stroke-width="2" marker-end="url(#arrow-if)"/>
+          <text x="325" y="143" font-size="11" font-weight="bold" text-anchor="middle" fill="#ef4444">偽 (False)</text>
+
+          <rect x="365" y="127" width="150" height="48" rx="6" fill="#fef2f2" stroke="#ef4444" stroke-width="2"/>
+          <text x="440" y="156" font-size="12" font-weight="bold" text-anchor="middle" fill="#991b1b">else の処理（任意）</text>
+
+          <!-- 合流 -->
+          <polyline points="515,59 530,59 530,200 270,200" fill="none" stroke="#475569" stroke-width="1.5" stroke-dasharray="4,3"/>
+          <polyline points="515,151 530,151 530,200" fill="none" stroke="#475569" stroke-width="1.5" stroke-dasharray="4,3"/>
+          <text x="400" y="216" font-size="11" font-weight="bold" text-anchor="middle" fill="#475569">合流して次の処理へ</text>
+        </svg>
+      </div>
+
+<pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    int score = 75;
+
+    if (score &gt;= 80) {
+        printf("合格（優秀）\n");
+    } else if (score &gt;= 60) {
+        printf("合格\n");
+    } else {
+        printf("不合格\n");
+    }
+
+    return 0;
+}</code></pre>
+      <div class="output-box">
+        合格
+      </div>
+    </section>
+
+    <!-- ========== switch文 ========== -->
+    <section class="content-box">
+      <h2>switch文：値ごとに処理を振り分ける</h2>
+      <p>1つの変数や式の<strong>値（整数や文字など）に応じて処理を分岐する</strong>構文だよ。<br>
+      「<code>==</code> で特定の値と一致するか」を何通りも判定したいとき、<code>if - else if</code> よりスッキリ書けるよ。</p>
+
+      <div class="diagram-area">
+        <svg width="540" height="225" viewBox="0 0 540 225" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow-sw" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 10 5 L 0 9 z" fill="#475569"/>
+            </marker>
+          </defs>
+
+          <!-- 判定する値 -->
+          <rect x="20" y="82" width="125" height="50" rx="6" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+          <text x="82" y="104" font-size="12" font-weight="bold" text-anchor="middle" fill="#1e3a8a">switch (値)</text>
+          <text x="82" y="121" font-size="11" text-anchor="middle" fill="#3b82f6">例: menu = 2</text>
+
+          <!-- 分岐線 -->
+          <line x1="145" y1="107" x2="195" y2="38" stroke="#475569" stroke-width="2" marker-end="url(#arrow-sw)"/>
+          <line x1="145" y1="107" x2="195" y2="107" stroke="#475569" stroke-width="2" marker-end="url(#arrow-sw)"/>
+          <line x1="145" y1="107" x2="195" y2="176" stroke="#475569" stroke-width="2" marker-end="url(#arrow-sw)"/>
+
+          <!-- case 1 -->
+          <rect x="195" y="16" width="175" height="44" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+          <text x="282" y="35" font-size="12" font-weight="bold" text-anchor="middle" fill="#334155">case 1: → 処理A</text>
+          <text x="282" y="51" font-size="10" text-anchor="middle" fill="#64748b">break で抜ける</text>
+
+          <!-- case 2（一致） -->
+          <rect x="195" y="85" width="175" height="44" rx="6" fill="#f0fdf4" stroke="#10b981" stroke-width="2"/>
+          <text x="282" y="104" font-size="12" font-weight="bold" text-anchor="middle" fill="#065f46">case 2: → 処理B（一致！）</text>
+          <text x="282" y="120" font-size="10" font-weight="bold" text-anchor="middle" fill="#10b981">break で抜ける</text>
+
+          <!-- default -->
+          <rect x="195" y="154" width="175" height="44" rx="6" fill="#fefce8" stroke="#eab308" stroke-width="1.5"/>
+          <text x="282" y="173" font-size="12" font-weight="bold" text-anchor="middle" fill="#854d0e">default: → それ以外</text>
+          <text x="282" y="189" font-size="10" text-anchor="middle" fill="#a16207">どれにも当てはまらない時</text>
+
+          <!-- 終了 -->
+          <line x1="370" y1="107" x2="415" y2="107" stroke="#10b981" stroke-width="2" marker-end="url(#arrow-sw)"/>
+          <rect x="415" y="85" width="105" height="44" rx="6" fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+          <text x="467" y="112" font-size="12" font-weight="bold" text-anchor="middle" fill="#334155">switch 終了</text>
+        </svg>
+      </div>
+
+<pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    int menu = 2;
+
+    switch (menu) {
+        case 1:
+            printf("コーヒーを選びました\n");
+            break;
+        case 2:
+            printf("紅茶を選びました\n");
+            break;
+        default:
+            printf("該当する番号がありません\n");
+            break;
+    }
+
+    return 0;
+}</code></pre>
+      <div class="output-box">
+        紅茶を選びました
+      </div>
+    </section>
+</html>

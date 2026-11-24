@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>while文 - C言語 学習ガイド</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <div class="container">
+    <a href="../c.html" class="back-link">← 一覧（c.html）に戻る</a>
+
+    <header>
+      <span class="badge lv2">Lv.2 基礎</span>
+      <h1>while文（条件付き繰り返し処理）</h1>
+    </header>
+
+    <!-- 1. 概要 -->
+    <section class="content-box">
+      <h2>概要</h2>
+      <p>条件式が<strong>真（成り立つあいだ）ずっと処理を繰り返す</strong>ための構文だよ。<br>
+      あらかじめ回数が決まっていない処理に向いてるよ。</p>
+    </section>
+
+    <!-- 2. 図解（SVGフローチャート） -->
+    <section class="content-box">
+      <h2>処理の流れ（図解）</h2>
+      <div class="diagram-area">
+        <svg width="540" height="220" viewBox="0 0 540 220" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 10 5 L 0 9 z" fill="#475569"/>
+            </marker>
+          </defs>
+
+          <!-- 開始前の準備 -->
+          <rect x="20" y="75" width="115" height="50" rx="6" fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+          <text x="77" y="97" font-size="12" font-weight="bold" text-anchor="middle" fill="#334155">事前の準備</text>
+          <text x="77" y="114" font-size="11" text-anchor="middle" fill="#64748b">int count = 3</text>
+
+          <!-- 矢印 準備 -> 条件式 -->
+          <line x1="135" y1="100" x2="175" y2="100" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- 条件式（ひし形） -->
+          <polygon points="245,52 315,100 245,148 175,100" fill="#fefce8" stroke="#eab308" stroke-width="2"/>
+          <text x="245" y="96" font-size="13" font-weight="bold" text-anchor="middle" fill="#854d0e">条件式</text>
+          <text x="245" y="114" font-size="11" text-anchor="middle" fill="#a16207">count &gt; 0</text>
+
+          <!-- 矢印 条件式 -> ループ終了 (False) -->
+          <line x1="245" y1="148" x2="245" y2="188" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+          <text x="255" y="170" font-size="11" font-weight="bold" fill="#ef4444">偽 (False)</text>
+          <text x="245" y="208" font-size="13" font-weight="bold" text-anchor="middle" fill="#475569">ループ終了</text>
+
+          <!-- 矢印 条件式 -> 繰り返す処理 (True) -->
+          <line x1="315" y1="100" x2="365" y2="100" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+          <text x="340" y="90" font-size="11" font-weight="bold" text-anchor="middle" fill="#10b981">真 (True)</text>
+
+          <!-- 繰り返す処理＋更新 -->
+          <rect x="365" y="68" width="150" height="64" rx="6" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+          <text x="440" y="93" font-size="13" font-weight="bold" text-anchor="middle" fill="#1e3a8a">繰り返す処理</text>
+          <text x="440" y="115" font-size="11" font-weight="bold" text-anchor="middle" fill="#3b82f6">状態を変える (count--)</text>
+
+          <!-- 戻りループ -->
+          <polyline points="440,68 440,24 245,24 245,49" fill="none" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+          <text x="342" y="17" font-size="11" font-weight="bold" text-anchor="middle" fill="#5b21b6">もう一度条件を確認</text>
+        </svg>
+      </div>
+    </section>
+
+    <!-- 3. 基本の書き方 -->
+    <section class="content-box">
+      <h2>基本の書き方と例</h2>
+<pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    int count = 3;
+
+    // count が 0 より大きいあいだ繰り返す
+    while (count &gt; 0) {
+        printf("残り %d\n", count);
+        count--; // 条件が変化するように更新する
+    }
+
+    printf("終了！\n");
+    return 0;
+}</code></pre>
+      <div class="output-box">
+        残り 3<br>
+        残り 2<br>
+        残り 1<br>
+        終了！
+      </div>
+    </section>
+
+  </div>
+</body>
+</html>
